@@ -13,18 +13,16 @@ object Helpers {
     // like on immutable maps
     def mod(f: B => B) = new Lens[A, B](a => f(get(a)), { case (a, b) => set(a, b) })
 
-    // Lens[A, B] + (B => B) = Lens[A, B]
-    def map(f: B => B) = new Lens[A, B](
-      a => f(get(a)),
-      (a, b) => set(a, b)
-    )
-
-
     // Composition with (B => B) and (A => Lens[A, B])
     // Lens[A, B] + (A => Lens[A, C]) = Lens[A, C]
     def flatMap[C](that: B => Lens[A, C]) = new Lens[A, C](
       a => that(get(a)).get(set(a, get(a))),
       (a, c) => that(get(a)).set(a, c)
+    )
+    // Lens[A, B] + (B => B) = Lens[A, B]
+    def map(f: B => B) = new Lens[A, B](
+      a => f(get(a)),
+      (a, b) => set(a, b)
     )
 
     def and(that: Lens[A, B]) = new Lens[A, B](
