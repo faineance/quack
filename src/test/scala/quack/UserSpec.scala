@@ -1,39 +1,59 @@
 package quack
 
-import org.scalatest.{BeforeAndAfter, FunSpec}
+import java.time.Instant
 
-import scala.collection.mutable.ListBuffer
+import org.scalatest.{BeforeAndAfter, FunSpec}
+import quack.Helpers._
 
 class UserSpec extends FunSpec with BeforeAndAfter {
+  val time = Instant.now
   var adam: User = _
   var john: User = _
   var james: User = _
   var greeting: Message = _
   var chat: Message = _
   var farewell: Message = _
-  var messages: ListBuffer[Message] = _
+  var messages: List[Message] = _
   before(
-    adam = new User("Adam"),
-    john = new User("John"),
-    james = new User("James"),
-    greeting = new Message("Hello World"),
-    chat = new Message("Weather."),
-    farewell = new Message("Goodbye World."),
-    messages = ListBuffer[Message](farewell, chat, greeting)
+    adam = User("Adam"),
+    john = User("John"),
+    james = User("James"),
+    greeting = new Message("Hello World", time),
+    chat = new Message("Weather", time.plusSeconds(5)),
+    farewell = new Message("Goodbye World", time.plusSeconds(10)),
+    messages = List[Message](farewell, chat, greeting)
   )
   describe("A User") {
-    it("should be able to follow and unfollow other users") {
-      adam.following += john
-      adam.following += james
+    it("should be able to follow other users") {
+      val followModLens =
+        (User.followingLens += john) and
+          (User.followingLens += james)
+      adam = followModLens.run(adam)
       assert(adam.following == Set(john, james))
-      adam.following -= john
-      assert(adam.following == Set(james))
     }
+//    it("should be able to view an aggregated list of all messages from the users they follow") {
+//      val followModLens =
+//        (User.followingLens += john) and
+//          (User.followingLens += james)
+//
+//      val adamTModLens = User.timelineLens += greeting
+//      val johnTModLens = User.timelineLens += chat
+//      val jamesTModLens = User.timelineLens += farewell
+//      adam = adamTModLens.run(adam)
+//      john = johnTModLens.run(john)
+//      james = jamesTModLens.run(james)
+//      adam = followModLens.run(adam)
+//      assert(adam.wall == messages)
+//
+//    }
     it("should be able to publish messages to a personal timeline") {
-      adam.timeline += greeting
-      adam.timeline += chat
-      adam.timeline += farewell
-      assert(adam.timeline.reverse == messages)
+      val timelineModLens =
+        (User.timelineLens += greeting) and
+          (User.timelineLens += chat) and
+          (User.timelineLens += farewell)
+
+      adam = timelineModLens.run(adam)
+      assert(adam.timeline == messages)
     }
   }
 }
